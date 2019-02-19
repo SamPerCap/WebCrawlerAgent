@@ -9,26 +9,36 @@ namespace WebCrawlerAgent
     public class Crawler
     {
         public string _URL { get; private set; }
-        UriBuilder ub;
+        Uri ub;
+        Uri hostUrl;
         WebClient wc;
         string webPage;
 
         public Crawler(string URL)
         {
             _URL = URL;
-            ub = new UriBuilder(_URL);
+            ub = new UriBuilder(_URL).Uri;
+            hostUrl = new UriBuilder(ub.Host).Uri;
             wc = new WebClient();
             Console.WriteLine("Downloading...");
-            webPage = wc.DownloadString(ub.Uri.ToString());
+
+            webPage = wc.DownloadString(ub);
             //Console.WriteLine("Here is:" + webPage);
+
             var urlTagPattern = new Regex(@"<a.*?href=[""'](?<url>.*?)[""'].*?>(?<name>.*?)</a>", RegexOptions.IgnoreCase);
             var hrefPattern = new Regex("href\\s*=\\s*(?:\"(?<1>[^\"]*)\"|(?<1>\\S+))", RegexOptions.IgnoreCase);
-            var urls = urlTagPattern.Matches(webPage);
 
-            foreach (Match url in urls)
+            var links = urlTagPattern.Matches(webPage);
+
+            foreach (Match href in links)
             {
-                string newUrl = hrefPattern.Match(url.Value).Groups[1].Value;
-                Console.WriteLine(newUrl);
+                string newUrl = hrefPattern.Match(href.Value).Groups[1].Value;
+
+                if (Uri.TryCreate(hostUrl, newUrl, out Uri absoluteUrl)
+                    && absoluteUrl.Scheme == Uri.UriSchemeHttp
+                    || absoluteUrl.Scheme == Uri.UriSchemeHttps)
+
+                Console.WriteLine(absoluteUrl.ToString());
             }
 
         }

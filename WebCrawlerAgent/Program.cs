@@ -6,7 +6,10 @@ namespace WebCrawlerAgent
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Console.WriteLine("Insert your URL");
+            string URL = Console.ReadLine();
+            Crawler builder = new Crawler(URL);
+            Console.ReadLine();
         }
     }
 }

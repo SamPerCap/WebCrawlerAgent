@@ -8,7 +8,9 @@ namespace WebCrawlerAgent
         {
             Console.WriteLine("Insert your URL");
             string URL = Console.ReadLine();
-            Crawler builder = new Crawler(URL);
+            Console.WriteLine("Maximum of links");
+            int numberOfLinks = Convert.ToInt32(Console.ReadLine());
+            Crawler builder = new Crawler(URL, numberOfLinks);
             Console.ReadLine();
         }
     }

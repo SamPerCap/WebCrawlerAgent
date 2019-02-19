@@ -8,39 +8,78 @@ namespace WebCrawlerAgent
 {
     public class Crawler
     {
-        public string _URL { get; private set; }
-        Uri ub;
+        protected string _URL { get; private set; }
+        Uri initialUrl;
         Uri hostUrl;
         WebClient wc;
+        int numberOfMaxLinks;
         string webPage;
+        static Queue<Uri> frontier = new Queue<Uri>();
+        static Dictionary<string, bool> visitedUrls = new Dictionary<string, bool>();
+        
 
-        public Crawler(string URL)
+        public Crawler(string URL, int numberOfLinks)
         {
             _URL = URL;
-            ub = new UriBuilder(_URL).Uri;
-            hostUrl = new UriBuilder(ub.Host).Uri;
-            wc = new WebClient();
-            Console.WriteLine("Downloading...");
+            initialUrl = new UriBuilder(_URL).Uri;
+            numberOfLinks = numberOfMaxLinks;
+            frontier.Enqueue(initialUrl);
+            Crawl(numberOfMaxLinks);
 
-            webPage = wc.DownloadString(ub);
-            //Console.WriteLine("Here is:" + webPage);
+            foreach (KeyValuePair<string, bool> kv in visitedUrls)
+            {
+                Console.WriteLine("{0, -10}{1}", kv.Value, kv.Key);
+            }
+        }
+
+        private void Crawl(int maxLinks)
+        {
+            while (frontier.Count > 0 && visitedUrls.Count < maxLinks)
+            {
+                Uri url = frontier.Dequeue();
+                if (!visitedUrls.ContainsKey(url.ToString()))
+                    VisitPage(url);
+            }
+        }
+        private void VisitPage(Uri url)
+        {
+            visitedUrls.Add(url.ToString(), true);
+
+            try
+            {
+            hostUrl = new UriBuilder(url.Host).Uri;
+            wc = new WebClient();
+            webPage = wc.DownloadString(url);
+            Console.WriteLine("Downloading...");
 
             var urlTagPattern = new Regex(@"<a.*?href=[""'](?<url>.*?)[""'].*?>(?<name>.*?)</a>", RegexOptions.IgnoreCase);
             var hrefPattern = new Regex("href\\s*=\\s*(?:\"(?<1>[^\"]*)\"|(?<1>\\S+))", RegexOptions.IgnoreCase);
 
             var links = urlTagPattern.Matches(webPage);
-
-            foreach (Match href in links)
+                
+                foreach (Match href in links)
+                {
+                    string newUrl = hrefPattern.Match(href.Value).Groups[1].Value;
+                    Uri absoluteUrl = NormalizeUrl(hostUrl, newUrl);
+                    if (absoluteUrl != null 
+                        && absoluteUrl.Scheme == Uri.UriSchemeHttp
+                        || absoluteUrl.Scheme == Uri.UriSchemeHttps)
+                    {
+                        if (!visitedUrls.ContainsKey(absoluteUrl.ToString()))
+                            frontier.Enqueue(absoluteUrl);
+                    }
+                }
+            }
+            catch (Exception)
             {
-                string newUrl = hrefPattern.Match(href.Value).Groups[1].Value;
-
-                if (Uri.TryCreate(hostUrl, newUrl, out Uri absoluteUrl)
-                    && absoluteUrl.Scheme == Uri.UriSchemeHttp
-                    || absoluteUrl.Scheme == Uri.UriSchemeHttps)
-
-                Console.WriteLine(absoluteUrl.ToString());
+                visitedUrls[url.ToString()] = false;
             }
 
+        }
+
+        static Uri NormalizeUrl(Uri hostUrl, string url)
+        {
+            return Uri.TryCreate(hostUrl, url, out Uri absoluteUrl) ? absoluteUrl : null;
         }
     }
 }

@@ -9,10 +9,10 @@ namespace WebCrawlerAgent
     public class Crawler
     {
         protected string _URL { get; private set; }
+        protected int _numberOfMaxLinks { get; private set; }
         Uri initialUrl;
         Uri hostUrl;
         WebClient wc;
-        int numberOfMaxLinks;
         string webPage;
         static Queue<Uri> frontier = new Queue<Uri>();
         static Dictionary<string, bool> visitedUrls = new Dictionary<string, bool>();
@@ -22,14 +22,13 @@ namespace WebCrawlerAgent
         {
             _URL = URL;
             initialUrl = new UriBuilder(_URL).Uri;
-            numberOfLinks = numberOfMaxLinks;
+            _numberOfMaxLinks = numberOfLinks;
             frontier.Enqueue(initialUrl);
-            Crawl(numberOfMaxLinks);
+            Crawl(_numberOfMaxLinks);
 
             foreach (KeyValuePair<string, bool> kv in visitedUrls)
-            {
-                Console.WriteLine("{0, -10}{1}", kv.Value, kv.Key);
-            }
+                Console.WriteLine("{0,-10} {1}", kv.Value, kv.Key);
+            
         }
 
         private void Crawl(int maxLinks)
